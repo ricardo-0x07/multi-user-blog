@@ -1,0 +1,67 @@
+{%  extends "base.html" %}
+{% block content %}
+<div class="container">
+  <div class="form">
+        
+    <h1 class="tab active"><a href="/blog">Blog</a></h1>
+      <div class="blog">
+        <div class="art-title" >Title: {{blog.title}}</div>
+        <div style="position: relative;">
+          <div style="text-align: end; float: right; position: absolute; padding-left: 93%;">
+            <a style="padding: 1rem;" href="/edit/blog/{{blog.key().id()}}"><span class="glyphicon glyphicon-edit"></span></a>
+            <a style="padding: 1rem;" href="/delete/blog/{{blog.key().id()}}"><span class="glyphicon glyphicon-remove"></span></a>
+          </div >     
+          <pre style="padding-top: 16px;" class="art-body">{{blog.body}}</pre>         
+        </div>
+        
+        <span class="glyphicon glyphicon-user" style="text-transform: capitalize;">: {{blog.user.name}}</span><br>
+        <span class="error">{{error}}</span><br>
+        <!-- <a href="/edit/blog/{{blog.key().id()}}">Edit</a><br> -->
+        <!-- <a href="/delete/blog/{{blog.key().id()}}">Delete</a><br> -->
+        <a href="/like/blog/{{blog.key().id()}}">Like</a>
+        <span><span class="badge">{{blog.likes.count()}}</span> Likes</span><hr>
+          <h3 class="tab active">Comments:</a></h3><hr>
+        {% for comment in blog.comments %}
+
+          {% if edit_comment_id == comment.key().id() %}
+            <div class="form">
+                  
+              <h3 class="tab active">Edit Comment</a></h3>
+              <form method="post">
+              <label>
+                <textarea class="form-control" rows="3" cols="54"  name="edited-content">{{comment.content}}</textarea>
+              </label>
+              <div class="error">{{error}}</div>
+                <button type="submit" class="btn btn-info"/>Submit</button>
+              </form> 
+            </div> <!-- /form -->
+          {% else %}
+            <div style="position: relative;">
+              <div style="text-align: end; float: right; position: absolute; padding-left: 93%;">
+                <a style="padding: 1rem;" href="/edit/comment/{{blog.key().id()}}/{{comment.key().id()}}"><span class="glyphicon glyphicon-edit"></span></a>
+                <a style="padding: 1rem;" href="/delete/comment/{{blog.key().id()}}/{{comment.key().id()}}"><span class="glyphicon glyphicon-remove"></span></a>
+              </div >              
+              <pre style="padding-top: 16px;">{{ comment.content }}
+              </pre>
+            </div>
+            {% endif %}
+
+          <br>
+          <span class="glyphicon glyphicon-user" style="text-transform: capitalize;">: {{comment.user.name}}</span><br><hr>
+        {% endfor %}
+        <div class="form">
+              
+          <h3 class="tab active">New Comment</a></h3>
+          <form method="post">
+          <label>
+            <textarea class="form-control" rows="5" cols="54" name="content">{{content}}</textarea>
+          </label>
+          <div class="error">{{error}}</div>
+            <button type="submit" class="btn btn-info"/>Submit</button>
+          </form> 
+        </div> <!-- /form -->
+
+      </div>
+  </div> <!-- /form -->  
+</div>
+{% endblock %}

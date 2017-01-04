@@ -1,0 +1,23 @@
+{%  extends "base.html" %}
+{% block content %}
+<div class="container">
+  <h1>/ascii/</h1>
+  <div class="form">
+        
+    <h1 class="tab active">Blogs</a></h1>
+    <form  method="post">
+    <label>
+      <div>Title</div>
+      <input autofocus class="form-control" type="text" name="subject" value="{{post.title}}">
+    </label>
+    <label>
+      <div>Blog</div>
+      <textarea class="form-control" rows="9" cols="108" name="content">{{post.body}}</textarea>
+    </label>
+    <div class="error">{{error}}</div>
+      <button type="submit" class="btn btn-info"/>Submit</button><br>
+      <a href="/blog/{{post.key().id()}}">Cancel</a>
+    </form> 
+  </div> <!-- /form -->
+</div>
+{% endblock %}

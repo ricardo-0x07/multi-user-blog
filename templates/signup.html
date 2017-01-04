@@ -1,0 +1,68 @@
+{%  extends "base.html" %}
+{% block content %}
+<div class="form">
+      
+      <h1 class="tab active"><a href="#signup">Sign Up</a></h1>
+      
+      <div class="tab-content">
+        <div id="signup">   
+          <form action="/signup" method="post" class="form-horizontal">
+          
+          <div class="top-row">
+            <div class="field-wrap form-group">
+              <label for="username" class="col-sm-2 control-label">
+                Full Name<span class="req">*</span>
+              </label>
+              <div class="col-sm-10">
+                <input autofocus class="form-control" name="username" id="username" type="text" autocomplete="off"  />
+                <div style="color: red;">{{username_error}}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="field-wrap form-group">
+            <label for="password" class="col-sm-2 control-label">
+              Set A Password<span >*</span>
+            </label>
+            <div class="col-sm-10">
+              <input class="form-control" type="password" name="password" id="password" autocomplete="off" />
+              <div style="color: red;">{{password_error}}</div>
+            </div>
+          </div>
+          
+          <div class="field-wrap form-group">
+            <label for="verify" class="col-sm-2 control-label">
+              Confirm Password<span >*</span>
+            </label>
+            <div class="col-sm-10">
+              <input class="form-control" type="password" name="verify" id="verify" autocomplete="off" />
+              <div style="color: red;">{{verify_error}}</div>
+            </div>
+          </div>
+          
+          <div class="field-wrap form-group">
+            <label for="email" class="col-sm-2 control-label">
+              Email Address<span ></span>
+            </label>
+            <div class="col-sm-10">
+              <input class="form-control" type="email" name="email" id="email" autocomplete="off" />
+              <div style="color: red;">{{email_error}}</div>
+            </div>
+          </div>
+          
+          <!-- <button type="submit" class="button button-block btn btn-default"/>Submit</button> -->
+          <div class="form-group">
+              <div class="col-sm-offset-2 col-sm-10">
+                <button type="submit" class="btn btn-info">Submit</button>
+                <a style="padding: 1rem" href="/login">Log-In</a>
+              </div>
+          </div>
+          
+          </form>
+
+        </div>
+        
+      </div><!-- tab-content -->
+      
+</div> <!-- /form -->
+{% endblock %}

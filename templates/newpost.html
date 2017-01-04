@@ -1,0 +1,21 @@
+{%  extends "base.html" %}
+{% block content %}
+<div class="container">
+  <div class="form">
+        
+    <h1 class="tab active">New Post</a></h1>
+    <form method="post">
+    <label>
+      <div>Title</div>
+      <input autofocus class="form-control" type="text" name="subject" value="{{title}}">
+    </label>
+    <label>
+      <div>Blog</div>
+      <textarea class="form-control"  rows="9" cols="108" name="content">{{body}}</textarea>
+    </label>
+    <div class="error">{{error}}</div>
+      <button type="submit" class="btn btn-info"/>Submit</button>
+    </form> 
+  </div> <!-- /form -->
+</div>
+{% endblock %}

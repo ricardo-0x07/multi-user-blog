@@ -1,0 +1,48 @@
+{%  extends "base.html" %}
+{% block content %}
+<div class="form">
+      
+      <h1 class="tab active"><a href="#signup">Sign In</a></h1>
+      
+      <div class="tab-content">
+        <div id="signup">   
+          <form action="/login" method="post" class="form-horizontal">
+          
+          <div class="top-row">
+            <div class="field-wrap form-group">
+              <label for="username" class="col-sm-2 control-label">
+                Full Name<span class="req">*</span>
+              </label>
+              <div class="col-sm-10">
+                <input autofocus pattern="^[a-zA-Z0-9_-]{3,20}$" required class="form-control" name="username" id="username" type="text" autocomplete="off"  placeholder="Kindly enter your full name" />
+                <div style="color: red;">{{username_error}}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="field-wrap form-group">
+            <label for="password" class="col-sm-2 control-label">
+              Password<span >*</span>
+            </label>
+            <div class="col-sm-10">
+              <input required pattern="^.{3,20}$" class="form-control" type="password" name="password" id="password" autocomplete="off" placeholder="Kindly enter your password" />
+              <div style="color: red;">{{password_error}}</div>
+            </div>
+          </div>
+                    
+          <!-- <button type="submit" class="button button-block btn btn-default"/>Submit</button> -->
+          <div class="form-group">
+              <div class="col-sm-offset-2 col-sm-10">
+                <button type="submit" class="btn btn-info">Submit</button>
+                <a style="padding: 1rem" href="/signup">Sign-Up</a>
+              </div>
+          </div>
+          
+          </form>
+
+        </div>
+        
+      </div><!-- tab-content -->
+      
+</div> <!-- /form -->
+{% endblock %}

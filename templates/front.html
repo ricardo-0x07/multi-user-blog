@@ -1,0 +1,13 @@
+{%  extends "base.html" %}
+{% block content %}
+<div class="container">
+  <div class="form">
+    <h1 class="tab active">Blogs</h1>
+    <h2><a href="/blog/newpost">New</a></h2>
+    <hr>
+    {% for blog in blogs %}
+      {{blog.render() | safe}}
+    {% endfor %}     
+  </div>
+</div>
+{% endblock %}

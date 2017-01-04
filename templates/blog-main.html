@@ -1,0 +1,23 @@
+{%  extends "base.html" %}
+{% block content %}
+<div class="container">
+  <div class="form">
+        
+    <h1 class="tab active">Blogs</h1>
+    <h2><a href="/blog/newpost">New</a></h2>
+    <hr>
+    {% for blog in blogs %}
+      <div class="blog">
+        <!-- <div class="blog-title" ><a href='/blog?title={{blog.title}}&body={{blog.body}}'>Title: {{blog.title}}</a></div> -->
+        <div class="blog-title" ><a href='/blog/{{blog.key().id()}}
+
+'>Title: {{blog.title}}</a></div>
+        <pre class="blog-body">{{blog.body}}</pre>
+        <span class="glyphicon glyphicon-user" style="text-transform: capitalize;">: {{blog.user.name}}</span><br><hr>
+        <!-- <a href="/edit/blog/{{blog.key().id()}}">Edit</a><br>
+        <a href="/delete/blog/{{blog.key().id()}}">Delete</a> -->
+      </div>
+    {% endfor %}     
+  </div> <!-- /form -->
+</div>
+{% endblock %}
