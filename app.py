@@ -1,49 +1,37 @@
+# MIT License
+
+# Copyright (c) 2016 Clive Cadogan
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+
 import os
 import hmac
 import jinja2
 import webapp2
 import re
-import random
-import string
-import hashlib
-
+import models
 from google.appengine.ext import db
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
                                autoescape=True)
 secret = 'imsosecret'
-
-
-def make_salt():
-    """Make salt: a random 5 charater string to be used to hash passwords.
-
-    Args: None.
-    Returns: a random 5 character string for hashing password.
-    """
-    return ''.join(random.choice(string.letters) for x in xrange(5))
-
-
-def make_pw_hash(name, pw, salt=None):
-    """Create a password hash.
-
-    Args: None.
-    Returns: a hash of the plaintext password and the salt.
-    """
-    if not salt:
-        salt = make_salt()
-    hash = hashlib.sha256(name + pw + salt).hexdigest()
-    return '%s,%s' % (hash, salt)
-
-
-def valid_pw(name, pw, h):
-    """Validate plaintext password entered by the user againts the hashed password.
-
-    Args: name: name of the user. pw: users plaintext password. h: users stored
-    password hash.
-    Returns: Boolean values True/False if password is valid or not.
-    """
-    salt = h.split(',')[1]
-    return h == make_pw_hash(name, pw, salt)
 
 
 def hash_str(s):
@@ -74,24 +62,6 @@ def check_secure_val(h):
     val = h.split('|')[0]
     if h == make_secure_val(val):
         return val
-
-
-def users_key(group='default'):
-    """Get users key.
-
-    Args: group: name of group.
-    Returns: database key for a specific group of users.
-    """
-    return db.Key.from_path('bloggers', group)
-
-
-def blog_key(name='default'):
-    """Get blog key.
-
-    Args: name: name of group.
-    Returns: database key for a specific group of blogs.
-    """
-    return db.Key.from_path('blogs', name)
 
 
 class Handler(webapp2.RequestHandler):
@@ -160,12 +130,12 @@ class Handler(webapp2.RequestHandler):
                            auth=self.auth)
         if uid:
             uid = int(uid)
-            self.user = uid and Blogger.by_id(uid)
+            self.user = uid and models.Blogger.by_id(uid)
             self.auth = True
             self.params = dict(user=self.user,
                                auth=self.auth)
 
-    def isloggedin(self):
+    def is_logged_in(self):
         """Check if a suser is loggin.
 
         Returns: Boolean True/False if a user is loogin or not.
@@ -183,7 +153,7 @@ class Handler(webapp2.RequestHandler):
         Args: post_id: id number of the post.
         Returns: Boolean True/False if user created the post of not.
         """
-        post = Post.by_id(post_id)
+        post = models.Post.by_id(post_id)
         return post.user.key().id() == self.user.key().id()
 
     def allowed_comment(self, comment_id):
@@ -192,167 +162,8 @@ class Handler(webapp2.RequestHandler):
         Args: comment_id: id number of the post.
         Returns: Boolean True/False if user created the post of not.
         """
-        comment = Comment.by_id(comment_id)
+        comment = models.Comment.by_id(comment_id)
         return comment.user.key().id() == self.user.key().id()
-
-
-class Blogger(db.Model):
-    """Blogger entity definition."""
-
-    name = db.StringProperty(required=True)
-    password = db.StringProperty(required=True)
-    email = db.StringProperty()
-    created = db.DateTimeProperty(auto_now_add=True)
-    last_modified = db.DateTimeProperty(auto_now=True)
-
-    @classmethod
-    def by_id(cls, uid):
-        """Fetch blogger entity by it's id.
-
-        Args: uid: id number of the blogger entity.
-        Returns: the retrieved blogger entity or None if not found.
-        """
-        return cls.get_by_id(uid, parent=None)
-
-    @classmethod
-    def by_name(cls, name):
-        """Fetch blogger entity by it's name.
-
-        Args: name: user name of the blogger entity.
-        Returns: the retrieved blogger entity or None if not found.
-        """
-        blogger = cls.all().filter('name =', name).get()
-        return blogger
-
-    @classmethod
-    def register(cls, name, pw, email=None):
-        """Create blogger entity without saving.
-
-        Args: name: user name of the blogger entity.
-            pw: plain text password of the blogger entity.
-            email: optional email address of the blogger entity.
-        Returns: the create blogger entity.
-        """
-        pw_hash = make_pw_hash(name, pw)
-        return cls(parent=None,
-                   name=name,
-                   password=pw_hash,
-                   email=email)
-
-    @classmethod
-    def get_valid_user(cls, name, pw):
-        """Get user and validate login password.
-
-        Args: name: user name of the blogger entity.
-            pw: plain text password the user hasattmpted to signin with.
-        Returns: the retrieved blogger entity once password has been validated
-        or None if not found or the password is not validated.
-        """
-        blogger = cls.by_name(name)
-        if blogger and valid_pw(name, pw, blogger.password):
-            return blogger
-
-
-class Post(db.Model):
-    """Post entity definition."""
-
-    title = db.StringProperty(required=True)
-    body = db.TextProperty(required=True)
-    user = db.ReferenceProperty(Blogger, collection_name='posts')
-    created = db.DateTimeProperty(auto_now_add=True)
-    last_modified = db.DateTimeProperty(auto_now=True)
-
-    @classmethod
-    def by_id(cls, uid):
-        """Fetch post entity by it's id.
-
-        Args: uid: id number of the post entity.
-        Returns: the retrieved post entity or None if not found.
-        """
-        return cls.get_by_id(uid, parent=None)
-
-    @classmethod
-    def by_name(cls, title):
-        """Fetch post entity by it's name.
-
-        Args: name: user name of the post entity.
-        Returns: the retrieved post entity or None if not found.
-        """
-        post = cls.all().filter('title =', title).get()
-        return post
-
-    @classmethod
-    def create(cls, title, body):
-        """Create post entity without saving.
-
-        Args: name: user name of the post entity.
-            pw: plain text password of the post entity.
-            email: optional email address of the post entity.
-        Returns: the create post entity.
-        """
-        return cls(parent=None,
-                   title=title,
-                   body=body)
-
-
-class Like(db.Model):
-    """Like entity definition."""
-
-    user = db.ReferenceProperty(Blogger, collection_name='likes')
-    post = db.ReferenceProperty(Post, collection_name='likes')
-    created = db.DateTimeProperty(auto_now_add=True)
-    last_modified = db.DateTimeProperty(auto_now=True)
-
-    @classmethod
-    def by_id(cls, uid):
-        """Fetch like entity by it's id.
-
-        Args: uid: id number of the like entity.
-        Returns: the retrieved like entity or None if not found.
-        """
-        return cls.get_by_id(uid, parent=None)
-
-    @classmethod
-    def create(cls, user, post):
-        """Create and save new or delete existing  like entity.
-
-        Determine if the logged in user has like a post already
-        and if the have the like will deleted i.e. unliked.
-        If the user has not like the post previoulsy a new like
-        will be created abd saved.
-
-        Args: user: user entity to check for existing like of a specified post.
-            post: post entity to be used to possible existing user like.
-        Returns: key to newly created like entity.
-        """
-        like = user.likes.filter('post =', post).get()
-        if like:
-            like.delete()
-            # db.delete_async(like.key())
-        else:
-            a = cls(user=user, post=post)
-            return a.put()
-
-
-class Comment(db.Model):
-    """Docstring for Comment."""
-
-    content = db.TextProperty(required=True)
-    user = db.ReferenceProperty(Blogger, collection_name='comments')
-    post = db.ReferenceProperty(Post, collection_name='comments')
-    created = db.DateTimeProperty(auto_now_add=True)
-    last_modified = db.DateTimeProperty(auto_now=True)
-
-    @classmethod
-    def by_id(cls, uid):
-        """Docstring for by_id."""
-        return cls.get_by_id(uid, parent=None)
-
-    @classmethod
-    def create(cls, content, user, post):
-        """Docstring for create."""
-        a = cls(content=content, user=user, post=post)
-        return a.put()
 
 
 class MainPage(Handler):
@@ -360,9 +171,8 @@ class MainPage(Handler):
 
     def render_front(self):
         """Render fetch all posts and render them."""
-        posts = Post.all().order('-created')
+        posts = models.Post.all().order('-created')
         self.params['blogs'] = posts
-        # blogs = greetings =
         self.render("blog-main.html", **self.params)
 
     def get(self):
@@ -384,17 +194,17 @@ class LikeHandler(Handler):
         Args: post_id: id number of the post the user is attempting
         to like or unlike.
         """
-        if not self.isloggedin():
+        if not self.is_logged_in():
             return
         id = int(post_id)
-        post = Post.by_id(id)
+        post = models.Post.by_id(id)
         error = ""
         user_post = self.user.posts.filter('__key__', post.key()).get()
         if user_post:
             error = 'Unauthorized: Only like attempt to like others posts'
             return self.redirect('/blog/' + post_id + '?error=' + error)
         if post:
-            Like.create(self.user, post)
+            models.Like.create(self.user, post)
             self.redirect('/blog/' + post_id)
 
 
@@ -415,7 +225,7 @@ class NewPostHandler(Handler):
 
     def get(self):
         """Docstring for get."""
-        if not self.isloggedin():
+        if not self.is_logged_in():
             return
         self.render_front()
 
@@ -424,12 +234,14 @@ class NewPostHandler(Handler):
 
         Re-renders new post with errors if title or body are missing.
         """
+        if not self.is_logged_in():
+            return
         title = self.request.get('subject')
         body = self.request.get('content')
         error = ""
 
         if title and body:
-            a = Post(title=title, body=body, user=self.user)
+            a = models.Post(title=title, body=body, user=self.user)
             key = a.put()
             id = str(key.id())
             self.redirect('/blog/' + id)
@@ -447,12 +259,12 @@ class BlogHandler(Handler):
         Args: blog_id: in number of the blog post the comment is for.
         """
         id = int(blog_id)
-        post = Post.by_id(id)
+        post = models.Post.by_id(id)
         content = self.request.get('content')
         error = ""
 
         if content:
-            Comment.create(content, self.user, post)
+            models.Comment.create(content, self.user, post)
             self.redirect('/blog/' + blog_id)
         else:
             error = "Kindly enter the content for your comment"
@@ -463,9 +275,10 @@ class BlogHandler(Handler):
 
         Args: blog_id: indumner of the blog post to be rendered.
         """
-        self.params['error'] = self.request.get('error')
+        self.params['comment_error'] = self.request.get('comment_error')
+        self.params['post_error'] = self.request.get('post_error')
         id = int(blog_id)
-        post = Post.by_id(id)
+        post = models.Post.by_id(id)
         self.params['blog'] = post
         if not post:
             self.error(404)
@@ -478,6 +291,8 @@ class BlogHandler(Handler):
 
         Args: blog_id: in number of the blog post the comment is for.
         """
+        if not self.is_logged_in():
+            return
         self.create_comment(blog_id)
 
 
@@ -489,31 +304,34 @@ class EditPostHandler(Handler):
 
         Args: blog_id: id number of the post to be edited.
         """
-        if not self.isloggedin():
+        if not self.is_logged_in():
             return
         id = int(blog_id)
-        post = Post.by_id(id)
-        # self.params['title'] = post.title
-        # self.params['body'] = post.body
-        error = ''
+        post = models.Post.by_id(id)
+        post_error = ''
         self.params['post'] = post
         if self.allowed_post(id):
-            self.set_secure_cookie('editedpost', str(id))
             self.render('editpost.html', **self.params)
         else:
             self.error(404)
-            error = 'Unauthorized: Only attempt to edit your own posts'
-            self.redirect('/blog/' + blog_id + '?error=' + error)
+            post_error = 'Unauthorized: Only attempt to edit your own posts'
+            self.redirect('/blog/' + blog_id + '?post_error=' + post_error)
 
     def post(self, blog_id):
         """Update edited posts.
 
         Args: blog_id: id number of the blog post that was edited.
         """
-        cookie_val = self.read_secure_cookie('editedpost')
-        post_id = int(cookie_val)
-        post = Post.by_id(post_id)
-        # if post:
+        if not self.is_logged_in():
+            return
+        post_id = int(blog_id)
+        post_error = ''
+        if not self.allowed_post(post_id):
+            self.error(404)
+            post_error = 'Unauthorized: Only attempt to edit your own posts'
+            self.redirect('/blog/' + blog_id + '?post_error=' + post_error)
+            return
+        post = models.Post.by_id(post_id)
         post.title = self.request.get('subject')
         post.body = self.request.get('content')
         self.params['error'] = ""
@@ -546,16 +364,16 @@ class DeletePostHandler(Handler):
 
         Args: blog_id: id number of post entity to be deleted.
         """
-        if not self.isloggedin():
+        if not self.is_logged_in():
             return
         id = int(blog_id)
-        post = Post.by_id(id)
+        post = models.Post.by_id(id)
         key = post.key()
-        error = ''
+        post_error = ''
         self.params['blog'] = post
         if not self.allowed_post(id):
-            error = 'Unauthorized: Only attempt to delete your own posts'
-            self.redirect('/blog/' + blog_id + '?error=' + error)
+            post_error = 'Unauthorized: Only attempt to delete your own posts'
+            self.redirect('/blog/' + blog_id + '?post_error=' + post_error)
         else:
             self.delete(key)
 
@@ -569,19 +387,20 @@ class EditCommentHandler(Handler):
         Args: blog_id: id number of post entity to which the comment belongs.
               comment_id: id number of the blog comment to be edited.
         """
-        if not self.isloggedin():
+        if not self.is_logged_in():
             return
         id = int(blog_id)
-        post = Post.by_id(id)
-        error = ''
+        post = models.Post.by_id(id)
+        comment_error = ''
         self.params['blog'] = post
         self.params['edit_comment_id'] = int(comment_id)
         if self.allowed_comment(int(comment_id)):
             self.render('blog.html', **self.params)
         else:
             self.error(404)
-            error = 'Unauthorized: Only attempt to edit your own posts'
-            self.redirect('/blog/' + blog_id + '?error=' + error)
+            comment_error = 'Unauthorized: Only edit your own comments'
+            self.redirect('/blog/' + blog_id +
+                          '?comment_error=' + comment_error)
 
     def post(self, blog_id, comment_id):
         """Update edited posts.
@@ -589,8 +408,10 @@ class EditCommentHandler(Handler):
         Args: blog_id: id number of post entity to which the comment belongs.
               comment_id: id number of the blog comment that was edited.
         """
+        if not self.is_logged_in():
+            return
         id = int(comment_id)
-        comment = Comment.by_id(id)
+        comment = models.Comment.by_id(id)
         comment.content = self.request.get('edited-content')
         self.params['error'] = ""
 
@@ -599,7 +420,7 @@ class EditCommentHandler(Handler):
             id = str(key.id())
             self.redirect('/blog/' + blog_id)
         else:
-            self.params['error'] = "We need both a title and some artwork!"
+            self.params['error'] = "We need content!"
             self.render('blog.html', **self.params)
 
 
@@ -624,15 +445,16 @@ class DeleteCommentHandler(Handler):
         Args: blog_id: id number of post entity to which the comment belongs.
               comment_id: id number of comment entity to be deleted.
         """
-        if not self.isloggedin():
+        if not self.is_logged_in():
             return
         id = int(comment_id)
-        comment = Comment.by_id(id)
+        comment = models.Comment.by_id(id)
         key = comment.key()
-        error = ''
+        comment_error = ''
         if not self.allowed_comment(id):
-            error = 'Unauthorized: Only attempt to delete your own posts'
-            self.redirect('/blog/' + blog_id + '?error=' + error)
+            comment_error = 'Unauthorized: Only delete your own comments'
+            self.redirect('/blog/' + blog_id +
+                          '?comment_error=' + comment_error)
         else:
             self.delete(key, blog_id)
 
@@ -677,7 +499,7 @@ class SignUpHandler(Handler):
         Returns: Boolean value True/False if the the name
         value is a duplicate or not.
         """
-        user = Blogger.by_name(name)
+        user = models.Blogger.by_name(name)
         if user:
             return True
         return False
@@ -722,8 +544,7 @@ class SignUpHandler(Handler):
         if have_error:
             self.render('signup.html', **self.params)
         else:
-            password = make_pw_hash(username, password)
-            a = Blogger.register(username, password, email)
+            a = models.Blogger.register(username, password, email)
             a.put()
             self.login(a)
             self.redirect('/welcome')
@@ -737,13 +558,12 @@ class WelcomeHandler(Handler):
 
         Redirects to signup page if user cookie is invalid.
         """
-        if not self.isloggedin():
+        if not self.is_logged_in():
             return
         cookie_val = self.read_secure_cookie('user')
         user_id = int(cookie_val)
-        user = user_id and Blogger.by_id(user_id)
+        user = user_id and models.Blogger.by_id(user_id)
         if not user:
-            # self.error(404)
             self.redirect('/signup')
         else:
             self.render('welcome.html', **self.params)
@@ -768,7 +588,7 @@ class LogInHandler(SignUpHandler):
         username = self.request.get('username')
         password = self.request.get('password')
 
-        user = Blogger.get_valid_user(username, password)
+        user = models.Blogger.get_valid_user(username, password)
         if user:
             self.login(user)
             self.redirect('/welcome')

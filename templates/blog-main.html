@@ -12,7 +12,7 @@
         <div class="blog-title" ><a href='/blog/{{blog.key().id()}}
 
 '>Title: {{blog.title}}</a></div>
-        <pre class="blog-body">{{blog.body}}</pre>
+        <blockquote style="max-height: 200px; overflow: scroll;" class="blog-body">{{blog.body}}</blockquote>
         <span class="glyphicon glyphicon-user" style="text-transform: capitalize;">: {{blog.user.name}}</span><br><hr>
         <!-- <a href="/edit/blog/{{blog.key().id()}}">Edit</a><br>
         <a href="/delete/blog/{{blog.key().id()}}">Delete</a> -->
